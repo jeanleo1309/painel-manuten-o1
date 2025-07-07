@@ -1,0 +1,109 @@
+import tkinter as tk
+import random
+from datetime import datetime
+import csv
+import matplotlib.pyplot as plt
+
+# Dados simulados por máquina
+maquinas = {
+    "Bomba 1": {"uso": 470, "limite": 500},
+    "Motor A": {"uso": 180, "limite": 250},
+    "Válvula Z": {"uso": 590, "limite": 600},
+}
+
+linhas = {}
+
+# Salva eventos em CSV
+def salvar_evento(nome, uso, status):
+    with open("historico_manutencao.csv", "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nome, f"{uso:.1f}", status])
+
+# Atualiza o painel em tempo real
+def atualizar_uso():
+    for nome, dados in maquinas.items():
+        dados["uso"] += random.uniform(0.5, 1.5)
+        uso = dados["uso"]
+        limite = dados["limite"]
+
+        if uso >= limite:
+            status = "🔴 Trocar"
+            cor = "red"
+        elif uso >= limite * 0.8:
+            status = "⚠️ Em risco"
+            cor = "orange"
+        else:
+            status = "✅ OK"
+            cor = "green"
+
+        linhas[nome]["uso"].config(text=f"{uso:.1f} h")
+        linhas[nome]["status"].config(text=status, bg=cor)
+
+        if status != linhas[nome]["ultimo_status"]:
+            salvar_evento(nome, uso, status)
+            linhas[nome]["ultimo_status"] = status
+
+    janela.after(1000, atualizar_uso)
+
+# Botão para simular troca de peça
+def trocar_peca(nome):
+    maquinas[nome]["uso"] = 0
+    linhas[nome]["uso"].config(text="0.0 h")
+    linhas[nome]["status"].config(text="✅ OK", bg="green")
+    salvar_evento(nome, 0, "Troca realizada")
+
+# Mostra gráfico com horas de uso
+def mostrar_grafico():
+    nomes = list(maquinas.keys())
+    usos = [dados["uso"] for dados in maquinas.values()]
+    limites = [dados["limite"] for dados in maquinas.values()]
+
+    plt.figure(figsize=(8, 4))
+    plt.bar(nomes, usos, color='skyblue', label="Uso Atual (h)")
+    plt.plot(nomes, limites, color='red', linestyle='--', label="Limite (h)")
+    plt.ylabel("Horas")
+    plt.title("Horas de Uso por Máquina")
+    plt.ylim(0, max(limites) + 50)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+# Interface Tkinter
+janela = tk.Tk()
+janela.title("🛠️ Painel de Manutenção Inteligente")
+janela.geometry("700x380")
+
+tk.Label(janela, text="Painel de Manutenção Preditiva", font=("Arial", 16, "bold")).pack(pady=10)
+
+# Cabeçalho
+cabecalho = tk.Frame(janela)
+cabecalho.pack()
+titulos = ["Máquina", "Horas de Uso", "Limite", "Status", "Ação"]
+for i, texto in enumerate(titulos):
+    tk.Label(cabecalho, text=texto, font=("Arial", 12, "bold"), width=15).grid(row=0, column=i)
+
+# Tabela dinâmica
+for idx, (nome, dados) in enumerate(maquinas.items(), start=1):
+    frame = tk.Frame(janela)
+    frame.pack()
+    tk.Label(frame, text=nome, width=15).grid(row=idx, column=0)
+    uso_lbl = tk.Label(frame, text=f"{dados['uso']:.1f} h", width=15)
+    uso_lbl.grid(row=idx, column=1)
+    tk.Label(frame, text=f"{dados['limite']} h", width=15).grid(row=idx, column=2)
+    status_lbl = tk.Label(frame, text="", width=15, bg="gray")
+    status_lbl.grid(row=idx, column=3)
+    btn = tk.Button(frame, text="Trocar Peça", command=lambda n=nome: trocar_peca(n))
+    btn.grid(row=idx, column=4)
+    linhas[nome] = {
+        "uso": uso_lbl,
+        "status": status_lbl,
+        "ultimo_status": ""
+    }
+
+# Botão do gráfico
+btn_grafico = tk.Button(janela, text="📊 Exibir Gráfico", command=mostrar_grafico, bg="blue", fg="white", font=("Arial", 12))
+btn_grafico.pack(pady=10)
+
+# Começa atualização
+atualizar_uso()
+janela.mainloop()
