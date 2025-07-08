@@ -1,3 +1,6 @@
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-Web%20App-red)
+![Status](https://img.shields.io/badge/Projeto-Funcional-brightgreen)
 # 🛠️ Painel de Manutenção Preditiva Industrial
 
 Este projeto simula um **painel de manutenção preditiva** de máquinas industriais.  
